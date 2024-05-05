@@ -35,19 +35,19 @@ next();
 
 const verifyToken = (req, res, next) =>{
   const token = req.cookies?.token;
+  console.log("token in the middleware", token)
   if(!token){
     return res.status(401).send({message : 'unauthorized access'})
   }
-
-  jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded)=>{
+  jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) =>{
     if(err){
-      return res.status(401).send({message : 'unauthorized access'})
+      return res.status(401).send({message : "unauthorized access"})
     }
-    req.user = decoded;
+    req.user = decoded
     next();
   })
-
 }
+
 
 async function run() {
   try {
@@ -58,15 +58,26 @@ const serviceCollection = client.db("carDoctorDB").collection("services")
 const bookingCollection = client.db("carDoctorDB").collection("bookings")
 
 // jwt Token api
-app.post('/jwt', logger, async(req, res)=>{
+app.post('/jwt', async(req, res)=>{
   const user = req.body;
-  console.log(user)
-  const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET , { expiresIn: '1h' })
-  res.cookie('token', token, {
+  const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {
+    expiresIn: '1h'
+  });
+
+  res.cookie('token', token,{
     httpOnly: true,
-    secure: false,
-    sameSite: false,
+    secure: true,
+    sameSite: 'none'
+
   })
+  .send({success: true});
+})   
+
+// user logout 
+app.post('/logOut', async(req, res)=>{
+  const user = req.body;
+  console.log("logout user in server", user)
+  res.clearCookie('token', {maxAge: 0})
   .send({success: true});
 })
 
@@ -89,9 +100,9 @@ app.post('/jwt', logger, async(req, res)=>{
  });
 
 //  booking
-app.get('/bookings', logger, verifyToken, async(req, res)=>{
-  console.log("token", req.cookies?.token)
- 
+app.get('/bookings',logger, verifyToken,  async(req, res)=>{
+  console.log("cok cok ", req.cookies)
+  console.log("verify token user info", req.user)
   if(req.query.email !== req.user.email){
     return res.status(403).send({message: 'forbidden access'})
   }
